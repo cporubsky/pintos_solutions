@@ -1,0 +1,150 @@
+		           +---------------------------+
+       	       	   |         CIS 520           |
+		           | PROJECT 3: Virtual Memory |
+		           |     DESIGN DOCUMENT       |
+		           +---------------------------+
+
+---- GROUP ----
+
+>> Fill in the names of your group members.
+
+First Last <none@none.com>
+
+
+---- PRELIMINARIES ----
+
+>> If you have any preliminary comments on your submission, notes for the
+>> TAs, or extra credit, please give them here.
+
+>> Please cite any offline or online sources you consulted while
+>> preparing your submission, other than the Pintos documentation, course
+>> text, lecture notes, and course staff.
+
+		We did start with the starter code provided from /pub/CIS520/pintos3.tar.gz
+
+	  We used these for inspiration:
+
+    https://github.com/LucasSeveryn/pintOS/blob/master/src/vm/page.c
+		(https://github.com/LucasSeveryn/pintOS/tree/master/src)
+
+    http://courses.cs.vt.edu/~cs3204/spring2009/pintos-vt-local/Project3Session.pdf
+
+		https://jeason.gitbooks.io/pintos-reference-guide-sysu/content/VM.html
+
+		https://github.com/codyjack/Pintos-2/blob/master/src/userprog/syscall.c
+		https://github.com/codyjack/Pintos-2/blob/master/src/vm/page.c
+		(https://github.com/codyjack/Pintos-2/tree/master/src)
+
+		http://csl.skku.edu/uploads/CSE3008F09/project3.pdf
+
+			PAGE TABLE MANAGEMENT
+			=====================
+
+---- ALGORITHMS ----
+
+>> A1: In a few paragraphs, describe the existing code for locating the
+>> frame, if any, that contains the data of a given page.
+
+	 The functionality for locating a frame is already provided in function
+   "try_frame_alloc_and_lock (struct page *page)". It first tries to find a free page via a for loop,
+   and it could not be able to find one, it would evict one page out by using "page_out (f->page)",
+   and then it returns the updated frame.
+
+---- SYNCHRONIZATION ----
+
+>> A2: When two user processes both need a new frame at the same time,
+>> how are races avoided?
+
+	 In "try_frame_alloc_and_lock (page)" of frame.c, we use a lock "lock_try_acquire (&f->lock)",
+   which prevents two processes from acquiring a new frame at the same time. This was given to us
+	 in the starter code that was provided.
+
+
+		       PAGING TO AND FROM DISK
+		       =======================
+
+---- ALGORITHMS ----
+
+>> B1: When a frame is required but none is free, some frame must be
+>> evicted.  Describe the algorithm used to choose a frame to evict.
+
+	 It first uses the function "page_accessed_recently (f->page)to see if it has been recently used, if not,
+   we can evict it out by using function "page_out (f->page)". This function will check if the page is dirty,
+   if it is dirty, we need to write it back to file, using "file_write_at()", before it gets evicted. After this,
+   we need to reset the file to NULL just like when it is first allocated.
+
+>> B2: Explain your heuristic for deciding whether a page fault for an
+>> invalid virtual address should cause the stack to be extended into
+>> the page that faulted.
+
+	 We used "address > boundry (boundry = PHYS_BASE - STACK_MAX)" and "address + 32 > esp" to see if the address
+   is in the user space and the fault address is at most 32 bytes from the stack pointer. If both conditions
+   are met, we need to allocate a new page.
+
+			 MEMORY MAPPED FILES
+			 ===================
+
+---- DATA STRUCTURES ----
+
+>> C1: Copy here the declaration of each new or changed `struct' or
+>> `struct' member, global or static variable, `typedef', or
+>> enumeration.  Identify the purpose of each in 25 words or less.
+
+	 Nothing was changed. Everything needed was provided in the starter code
+
+---- ALGORITHMS ----
+
+>> C2: Describe how memory mapped files integrate into your virtual
+>> memory subsystem.  Explain how the page fault and eviction
+>> processes differ between swap pages and other pages.
+
+   In page.h there is a struct page, within that struct there is information for
+	 the memory mapped files. It keeps track for if it needs to be written back to
+	 the file or written back to swap. It also keeps track of the file, the offset
+	 for the file, and the bytes to read or write. This allows us to keep track of
+	 anything related to them. This struct was provided for us in our starter code.
+
+>> C3: Explain how you determine whether a new file mapping overlaps
+>> any existing segment.
+
+   This is mainly done by using "if (hash_insert (t->pages, &p->hash_elem) != NULL)".
+   If the page is already in the hash table, this function wont modify it.
+   If it is not in the table, this function will insert it into the table and return NULL
+	 back to us.
+
+---- RATIONALE ----
+
+>> C4: Mappings created with "mmap" have similar semantics to those of
+>> data demand-paged from executables, except that "mmap" mappings are
+>> written back to their original files, not to swap.  This implies
+>> that much of their implementation can be shared.  Explain why your
+>> implementation either does or does not share much of the code for
+>> the two situations.
+
+   We think they share much code. Both of them need to check if the file is dirty before writing it back.
+   If not, no need to write back. When loading page in memory, they both use function “page_in (void *fault_addr)”.
+	 So they share much code.
+
+			   SURVEY QUESTIONS
+			   ================
+
+Answering these questions is optional, but it will help us improve the
+course in future quarters.  Feel free to tell us anything you
+want--these questions are just to spur your thoughts.  You may also
+choose to respond anonymously in the course evaluations at the end of
+the quarter.
+
+>> In your opinion, was this assignment, or any one of the three problems
+>> in it, too easy or too hard?  Did it take too long or too little time?
+
+>> Did you find that working on a particular part of the assignment gave
+>> you greater insight into some aspect of OS design?
+
+>> Is there some particular fact or hint we should give students in
+>> future quarters to help them solve the problems?  Conversely, did you
+>> find any of our guidance to be misleading?
+
+>> Do you have any suggestions for the TAs to more effectively assist
+>> students, either for future quarters or the remaining projects?
+
+>> Any other comments?
